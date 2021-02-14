@@ -1,17 +1,10 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  
-  <url>
-    <loc>https://melkor.me/categories/</loc>
-  </url>
-  
-  <url>
-    <loc>https://melkor.me/</loc>
-  </url>
-  
-  <url>
-    <loc>https://melkor.me/tags/</loc>
-  </url>
-  
-</urlset>
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"><url>
+    <loc>https://melkor.me/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/posts/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/tags/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/tags/%E5%AE%89%E5%85%A8/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/tags/%E6%8A%80%E6%9C%AF/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/posts/authentication-authorization-0x00/</loc><lastmod>2021-01-30T14:40:02+08:00</lastmod></url><url>
+    <loc>https://melkor.me/posts/intro/</loc><lastmod>2021-01-01T00:00:00+08:00</lastmod></url><url>
+    <loc>https://melkor.me/about/</loc></url></urlset>

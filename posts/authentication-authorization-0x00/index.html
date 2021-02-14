@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.76.3" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>端到端的身份认证和访问控制：0x00 问题的提出&nbsp;&ndash;&nbsp;Melkor&#39;s Blog</title><link rel="stylesheet" href="/css/core.min.2d6818c3774c8f680c9da7b88d43d6c8c8c532ce07a9b5b0e530590cecc120d7cff31eba698555558c2dfff962a8b62a.css" integrity="sha384-LWgYw3dMj2gMnae4jUPWyMjFMs4HqbWw5TBZDOzBINfP8x66aYVVVYwt//liqLYq"><meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="端到端的身份认证和访问控制：0x00 问题的提出" /><body><section id="header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Melkor's Blog</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/tags/">标签</a><a class="nav item" href="/about">关于我</a></nav></div></span></div></section><section id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">端到端的身份认证和访问控制：0x00 问题的提出</h1><p class="article date">2021-01-30<span class="reading-time"> • 预计阅读时间 11 分钟</span></p></section><article class="article markdown-body"><blockquote>
+<p>这个系列的文章将分享我对「端到端身份认证和访问控制」这个在应用安全领域很重要的问题的解决思路。整个系列将分为「问题的提出」「常见方案及缺点」「身份认证的方法」「访问控制的方法」几个部分。</p>
+</blockquote>
+<h2 id="什么是身份认证和访问控制">什么是「身份认证」和「访问控制」？</h2>
+<p>简单来说，身份认证就是<strong>确认发起者的身份</strong>，访问控制就是<strong>确认发起者有权做这件事</strong>。这两者是系统应用层安全的主要保障手段。</p>
+<h3 id="生物本能">生物本能</h3>
+<p>从广义上来说，从生物有了自我意识开始，身份认证和访问控制的概念就已经存在了。一些动物群体会通过样貌、气味等因素识别自己的同类和异类，以此来壮大群体和抵御外敌；还有一些动物的雄性之间以各种方式争夺交配权，雌性只会允许胜者与其交配，从而完成种群的良性迭代。虽然没有仔细做过研究，但是植物里一定也有类似的机制。可以说，这两者是存在于碳基生物基因中的本能。</p>
+<p>但是显然，这种身份认证和访问控制的方式并非完全有效，也不能一定执行。比如，有些动物可以伪装成猎物的样子或者模仿其声音，吸引猎物前来自投罗网；相应地猎物也一定有办法能够一定程度上识别出这样的伪装，否则种群基因也没办法延续下去。我也毫不怀疑有雄性动物不顾交配权争夺的结果强行与雌性进行交配；当然有这样习俗的动物群体一般都有严格的等级制度，违背制度将会受到群体的严厉打击或者排斥，所以从长远来说违背者的基因并没有传递下来。</p>
+<p>这样不完美的身份认证和访问控制方式能够长期存在于自然界中，显然与种群延续的特点息息相关——由于种群要延续下去，并不需要100%保证正确，而是可以损失一定准确度和强制力，换取低廉的执行成本，这样对本体器官和社会组织负担足够小，反而可以增强环境适应力。比如，如果需要更精确地识别出伪装，势必要进化出更精密、更复杂的视觉和嗅觉器官，这些器官必然变得更脆弱，耗能也更多；如果要保证没有「强奸犯」的存在，必须要有常驻的「裁判」和「保安」，那又如何保证裁判和保安的可靠性呢？可能还需要有另外的监督者，这样下去动物社会的形态必然会变得复杂无比。但是制度越复杂，漏洞就越多，钻空子的机会也越多。从0分到90分所付出的成本可能比从90分到95分付出的更少，所以生物长期进化的过程中选择了看起来粗糙却非常有效的简单方案。</p>
+<h3 id="人类社会">人类社会</h3>
+<p>然而，在今天人类的社会中，对身份认证和访问控制的要求并不一样了。人类发展出了复杂的社会形态，政治家讲了好听的故事将人们组织在了一起，有了专业化分工，能够进行大规模的动员，有了改造自然的能力。同时，虽然没有了生存威胁，人类终究还是动物，喜欢欺骗和钻空子；只是听信了那么好听的故事以后，人类不可能再忍受原来那样的粗糙的方式了，也能够承担更高的成本了，所以出现了各种各样新的方式来进行更准确的身份认证和更精细的访问控制。</p>
+<p>我们最常见到的就是身份证了：由于没有人可以认识所有人，因此需要权威机构（国家）颁发的可信身份信息来证明一个人的身份合法性。<a href="https://baike.baidu.com/item/%E8%BA%AB%E4%BB%BD%E8%AF%81"target="_blank" rel="noopener noreferrer">最早的身份证能追溯到战国时期的秦国</a>
+，政府给人们发放一块刻有头像和籍贯信息的竹片，让政府可以随时确认人们的身份，方便对人口流动进行有效地管理。到了今天，全国有几十亿人，社会分工更为细致，对身份证的需要也更为强烈。比如坐火车和飞机时，身份证不仅起到了身份认证的作用，并且在售票系统与身份证绑定后，身份证也具备了访问控制的能力，系统可以通过身份证确认你是否有权登上这列火车或这班飞机。</p>
+<p>当然，身份证提供的只是身份信息内容，但是这个人是不是身份证上的那个人呢？这涉及到<strong>两个问题</strong>：一是身份证本身能否防伪造，二是这个人与身份证上的人是否一致。这两个问题不停地出现，系统也要进行不断地改造升级来对抗。</p>
+<p>关于第一个问题，<a href="https://baike.baidu.com/item/%E7%AC%AC%E4%B8%80%E4%BB%A3%E5%B1%85%E6%B0%91%E8%BA%AB%E4%BB%BD%E8%AF%81/9198722"target="_blank" rel="noopener noreferrer">最早的身份证采用印刷和照相翻拍技术塑封而成</a>
+，很容易被伪造，利用伪造的身份证进行非法牟利的行为恐怕是数不胜数，只是在当时不太发达的通信网络和金融系统下也基本够用了。但是在如今这种信息传播速度极快和金融风险影响极大的时代下，身份证本身的可信度显然需要更强的手段保证，因此身份证有了芯片，即使带来制造和验证成本的上升也是非常值得的。</p>
+<p>关于第二个问题，如今已经有了各种人脸识别的算法，也宣称识别的误识率和拒识率水平已经超过了人类，不过最常见的解决方案仍然是靠人眼。这是因为虽然算法理论上效果很好，但是在实际应用中仍然出现一些人类不会犯的错，因为算法出错的原因很复杂，出了算法自身缺陷外，环境光线、网络安全、机器性能等等都会影响结果。同时将决定权都交给算法和自动驾驶一样有法律问题：一旦出错，不可能将责任归于没有生命的机器和算法，但是也很难完全将责任推给相应的商业公司或者开发者；相比之下，人类出错的原因通常是疲劳、懒惰（职业道德）或者贪婪（收受贿赂），如果出错，我们很容易找到责任人，也很容易想到解决方案：处罚、换人、增加新的规章制度，并且这些措施在短期内都是有效的，因此更容易被实施。由于在大多数场景下原本已经需要人处理业务了，这个人就可以顺便完成验证身份一致性的工作了，这样可以降低不少成本。如果明明有工作人员在处理业务，却仍然需要机器识别人脸，说明这个业务所需要的安全性极为重要（如疫情时的机场安检），需要双重保险进一步降低误识率和拒识率，同时也可以厘清责任边界。</p>
+<h3 id="互联网产品">互联网产品</h3>
+<p>在互联网的产品中，常见的身份认证手段有用户名密码登录、扫码登录、短信验证码登录、刷脸登录等。一般来说，身份认证的手段可以分为三个维度：</p>
+<ul>
+<li>所知：只有你知道、别人不知道的信息，比如你自己设置的密码，或者以前比较流行的密码找回问题。「所知」的风险是信息泄漏，比如密码过于简单被破解，或者个人信息被用于猜想密码找回问题。</li>
+<li>所有：只有你有，别人没有的信息，比如短信验证码只会发到你的手机上，你拥有这部手机，因此可以看到。「所有」的风险是丧失控制权，比如你的手机丢了，虽然可能打不开你的手机，但是可以把手机卡取出来装到另一部手机中来接收验证码。</li>
+<li>所是：你就是你，别人不是你，比如你的指纹、虹膜、人脸等独一无二的特征。「所是」的风险是一方面是生物特征模拟，比如使用指模、面具等假装是你，检查设备能否发现；另一方面是特征数据泄漏，并且与所知不同的地方在于，生物特征没办法变更，泄漏的危害更大。</li>
+</ul>
+<p>不同维度的认证手段在一定程度上都是可信的，但是如果对安全性有更高的要求，一般会验证多种因子，比如所知+所有，就是我们常见的二次认证，要求不仅要输入只有你知道的密码，还要输入发到你手机上的短信验证码或者密码器上的动态密码。</p>
+<p>在一个典型的互联网产品的后台中，身份认证是在接入层完成的，比如请求中带有的登录态cookie对应的服务器session是否合法，并在后面的服务中都认为该请求是经过认证的。访问控制也是基于请求包中声明的身份进行的，具体的策略主要有DAC、MAC、RBAC、ABAC等，总体思路是对资源和身份进行不同维度的归类，来达到精细控制的目的。比如一个应用软件包含了很多功能，对不同等级的会员提供不同的功能，那一个会员的请求进来访问某个功能的时候，系统就需要根据请求中包含的身份信息来判断该身份的用户是否有权限使用该功能。</p>
+<h2 id="什么又是端到端">什么又是「端到端」？</h2>
+<p>以一个生活中常见的场景为例。我们去餐厅吃饭，坐下后服务员会问我们要点什么菜；服务员告诉后厨需要做什么菜；后厨的人根据送来的订单决定接下来做什么菜；做好后服务员把菜从后台端给顾客；顾客吃完后去结账。</p>
+<p>当然，现在的餐厅很多都变成了扫码点餐、iPad点餐或者给张单子让顾客自己画，即使需要服务员点餐的，服务员也可能手里拿一个本子或者机器记录好顾客点的菜品，结账时不会直接问服务员。但是为了说明这个问题，我还是以传统苍蝇小馆子的模式为例。经过一些抽象和简化，整个流程大概是这样的：</p>
+<div class="mermaid" align="center">
+  
+sequenceDiagram
+    participant Customer as 顾客
+    participant Waiter as 服务员
+    participant Counter as 收银员
+    participant Kitchen as 后厨
+
+    Customer ->> Customer: 选菜
+    Customer ->> Waiter: 上菜
+    Waiter ->> Kitchen: 制作
+    Kitchen ->> Waiter: 送菜
+    Customer ->> Customer: 用餐
+    Customer ->> Counter: 结账
+    Counter ->> Customer: 支付
+
+</div>
+<p>可以看出来，在这个「产品」中，安全的核心在于服务员——我们点的菜是经过服务员确认才告知后厨的，结账的依据也要依赖服务员的可靠性。当然，在苍蝇小馆子里，服务员和收银员可能是同一个人，但是服务员和后厨一般不会重合，收银员和顾客也不会直接找后厨。</p>
+<p>那么，考虑以下三种情况：</p>
+<ol>
+<li>我跟服务员说要点一份鱼香肉丝，但是又冒充服务员去跟后厨说要一份回锅肉，并且自己悄悄端回来吃了，最后去结账的时候这份回锅肉就变成了没点过的菜，但是后厨又实实在在做了，于是我一分钱不花吃了一份回锅肉。</li>
+<li>我跟服务员很熟，表面跟他说点一份鱼香肉丝，但是服务员跟后厨说做一份鱼香肉丝和一份回锅肉，最后去结账的时候跟收银员说这个顾客只点了一份鱼香肉丝。于是我又白白吃了一份回锅肉。</li>
+<li>我穷得叮当响，根本下不起馆子，但是我强装有钱人点了一份大龙虾，开开心心吃完以后表示没钱付账。不管最后我是成功跑路还是被餐厅老板揍了一顿，餐厅的这份损失是实实在在造成了。</li>
+</ol>
+<p>如果把服务员当作是接入层，后厨当作是后台，我们显然会发现一个问题：接入层有没有进行身份认证和访问控制，后台其实不知道，只能无条件信任了接入层传来的请求。在这种情况下，如果接入层有意或无意没做好身份认证，或者接入层可以被绕过，那么整个系统的安全性就不能得到保证了。</p>
+<p>而端到端是指，每个要执行用户请求的地方都需要有能力验证用户的身份和权限。在餐厅的例子里，就是指后厨中每个人都要对服务员给的做菜要求提出质疑：顾客跟服务员说了么？这是不是顾客要的？顾客能买得起吗？</p>
+<h3 id="加上端到端就很难了么">加上端到端就很难了么？</h3>
+<p>在微服务体系下，整个系统中可能有成百上千的服务。一个请求进来先进行身份认证，通过后以树状散开，拿其中几个参数去请求一个服务、另外几个参数去请求另一个服务，被调用到的服务又调用了别的服务，这些服务可能要进行进一步的访问控制。最终一个请求从进入到返回，可能经过了几十个服务。</p>
+<p><img  src="/authentication-authorization/%e5%be%ae%e6%9c%8d%e5%8a%a1%e7%b3%bb%e7%bb%9f%e4%b8%ad%e8%af%b7%e6%b1%82%e6%a0%91%e7%8a%b6%e6%95%a3%e5%bc%80.svg"
+        alt="微服务系统中请求树状散开"/></p>
+<p>在这种情况下，<strong>每个</strong>后台服务的开发者都应该考虑如下三个问题：</p>
+<ol>
+<li>这个请求真的经过了接入层吗？
+<ul>
+<li>有人在内部写了一个工具直接来调用</li>
+</ul>
+</li>
+<li>如果经过了接入层，接入层的服务有没有进行身份认证？
+<ul>
+<li>忘了认证</li>
+<li>写了个bug没认证</li>
+<li>故意搞事不认证</li>
+</ul>
+</li>
+<li>如果经过了接入层、也进行了身份认证，那这个用户有权限做这件事吗？
+<ul>
+<li>横向越权</li>
+<li>纵向越权</li>
+</ul>
+</li>
+</ol>
+<h3 id="层层传递认证材料">层层传递认证材料？</h3>
+<p>一个显而易见而简单粗暴的方案，显然是将认证材料传递下去，每个后台服务都重新请求认证服务进行身份认证：</p>
+<p><img  src="/authentication-authorization/%e5%b1%82%e5%b1%82%e4%bc%a0%e9%80%92%e8%ae%a4%e8%af%81%e6%9d%90%e6%96%99.svg"
+        alt="层层传递认证材料"/></p>
+<p>但是这样的方法存在以下问题：</p>
+<ul>
+<li>安全性：认证材料可能包含敏感信息，层层传递增加了泄漏风险</li>
+<li>可用性：认证服务要承受原来数倍乃至数十倍的请求量，成了系统中的大单点</li>
+<li>易用性：系统可能有不同的入口，也有不同的认证方式，因此每个后台服务还需要知道最上游的入口是什么、兼容所有的认证方式，认证成本很高</li>
+</ul>
+<h3 id="各自约定认证方法">各自约定认证方法？</h3>
+<p>另一个思路简单来说就是全局放任不管，任由服务开发者之间自行想办法解决：</p>
+<p><img  src="/authentication-authorization/%e5%90%84%e8%87%aa%e7%ba%a6%e5%ae%9a%e8%ae%a4%e8%af%81%e6%96%b9%e6%b3%95.svg"
+        alt="各自约定认证方法"/></p>
+<p>这种思路显然也是不可取的：</p>
+<ul>
+<li>安全性：开发者们对安全的理解和开发水平参差不齐，很容易有安全漏洞</li>
+<li>可用性：一旦出现问题，缺乏统一的容灾手段，全凭开发者良心</li>
+<li>易用性：每次调用服务前还得协商认证方法、密钥等等，成本过于高昂，最终显然不会有人真的去做这种事情</li>
+</ul>
+<p>需要额外说明的是，很多系统都有服务之间的上下游认证，即每个服务可以规定哪些服务能调用自己。但是这种上下游的认证和端到端认证要解决的不是同一层级的问题，前者无法真的解决后者的问题——一方面，如果某服务A只允许B来访问，但是如果访问B的请求没有真的经过认证，即使全链路都已经设定好了所有服务的上下游调用权限，A拿到的请求仍然有问题，仍然无能为力；另一方面，这种靠上下游认证的方式来实现端到端的认证，会造成安全问题和服务调用关系（拓扑结构）的强耦合，一旦调用关系有变更而忘记更新上下游认证权限，那所有请求将被系统误拦，造成更大的问题。</p>
+<hr>
+<p>经过上面的分析，我们可以发现，如果有一套完整的组件可以把身份认证和访问控制的事情一劳永逸地解决，显然可以在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全有两个很容易被忽略的特点：</p>
+<ol>
+<li>安全没有100%，所有的安全手段都只能是提高作恶的成本，不能确保安全事件不发生，并且提升安全性的成本会随着安全性本身的提升而大幅增加，从98分提升到99分的难度可能比从0分提升到90分还要高。</li>
+<li>想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全组件在组织内的推广和实施是格外困难的。</li>
+</ol>
+<p>正因为如此，本文所描述的安全问题对于大多数组织和系统来说都是重要而不紧急的问题。由于工作关系，本文介绍的问题和解决方案可能更适合于较大的团队和较为重要的系统，不过对于问题的重要和紧急四象限来说，反而是重要不紧急的问题最容易被忽略，拖着拖着变成了既重要又紧急的问题，这时候再去着手解决时间就比较紧迫，实现上可能要有所妥协，可能留下债务，长期来看会增加整个团队的成本。</p>
+<p>接下来的文章将介绍解决本问题的思路和方案。</p>
+</article><section class="article labels"><a class="tag" href=/tags/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/%E5%AE%89%E5%85%A8/>安全</a></section><section class="article license"><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">知识共享署名-相同方式共享 4.0 国际许可协议</a>进行许可。</section>
+</div>
+<div class="article bottom"><section class="article navigation"><p><a class="link" href="/posts/intro/"><span class="iconfont icon-article"></span>重新开始</a></p></section><section class="article discussion"><div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "melkor-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a></section></div></section><section id="footer"><div class="footer-wrap">
+    <p class="copyright">Copyright @ 2021 Melkor</p>
+    <p class="powerby"><span>Powered&nbsp;by&nbsp;</span><a href="https://gohugo.io" 
+        target="_blank" rel="noopener noreferrer">Hugo</a><span>&nbsp;&amp;&nbsp;</span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank" rel="noopener noreferrer">Notepadium</a></p></div>
+</section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body);"></script>
+
+<script async src="https://unpkg.com/mermaid@8.9.0/dist/mermaid.min.js"></script>
+</body>
+
+</html>
