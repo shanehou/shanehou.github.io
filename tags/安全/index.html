@@ -4,13 +4,25 @@
 <meta name="supported-color-schemes" content="light dark"><title>安全&nbsp;&ndash;&nbsp;Melkor&#39;s Blog</title><link rel="stylesheet" href="/css/core.min.2d6818c3774c8f680c9da7b88d43d6c8c8c532ce07a9b5b0e530590cecc120d7cff31eba698555558c2dfff962a8b62a.css" integrity="sha384-LWgYw3dMj2gMnae4jUPWyMjFMs4HqbWw5TBZDOzBINfP8x66aYVVVYwt//liqLYq"><link rel="alternate" type="application/rss+xml" href="/tags/%E5%AE%89%E5%85%A8/index.xml" title="Melkor's Blog" /><meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="安全" /><body><section id="header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Melkor's Blog</span></a></span>
-        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/tags/">标签</a><a class="nav item" href="/about">关于我</a></nav></div></span></div></section><section id="content"><section class="article header"><h1>安全</h1></section><ul class="note list"><li class="item"><a class="note" href="/posts/authentication-authorization-0x00/">
-            <p class="note title">端到端的身份认证和访问控制：0x00 问题的提出</p><p class="note date">2021-01-30</p><p class="note content">这个系列的文章将分享我对「端到端身份认证和访问控制」这个在应用安全领域很重要的问题的解决思路。整个系列将分为「问题的提出」「常见方案及缺点」<span class="mldr">&mldr;</span></p></a><p class="note labels"><a class="tag" href="/tags/%E6%8A%80%E6%9C%AF/">技术</a><a class="tag" href="/tags/%E5%AE%89%E5%85%A8/">安全</a></p></li></ul></section><section id="footer"><div class="footer-wrap">
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/tags/">标签</a><a class="nav item" href="/about">关于我</a></nav></div></span></div></section><section id="content"><section class="article header"><h1>安全</h1></section><ul class="note list"><li class="item"><a class="note" href="/posts/authentication-authorization-0x01/">
+            <p class="note title">「端到端的身份认证和访问控制」0x01：信任的传递</p><p class="note date">2021-03-07</p><p class="note content">有了明确的目标后，我们需要开始考虑整个系统如何建立起来。 @startuml title [每个服务都进行身份认证] actor 用户 as User archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;<span class="mldr">&mldr;</span></p></a><p class="note labels"><a class="tag" href="/tags/%E6%8A%80%E6%9C%AF/">技术</a><a class="tag" href="/tags/%E5%AE%89%E5%85%A8/">安全</a></p></li><li class="item"><a class="note" href="/posts/authentication-authorization-0x00/">
+            <p class="note title">「端到端的身份认证和访问控制」0x00：问题的提出</p><p class="note date">2021-01-30</p><p class="note content">这个系列的文章将分享我对「端到端身份认证和访问控制」这个在应用安全领域很重要的问题的理解和解决思路。 什么是「身份认证」和「访问控制」？ 简单来<span class="mldr">&mldr;</span></p></a><p class="note labels"><a class="tag" href="/tags/%E6%8A%80%E6%9C%AF/">技术</a><a class="tag" href="/tags/%E5%AE%89%E5%85%A8/">安全</a></p></li></ul></section><section id="footer"><div class="footer-wrap">
     <p class="copyright">Copyright @ 2021 Melkor</p>
     <p class="powerby"><span>Powered&nbsp;by&nbsp;</span><a href="https://gohugo.io" 
         target="_blank" rel="noopener noreferrer">Hugo</a><span>&nbsp;&amp;&nbsp;</span><a href="https://themes.gohugo.io/hugo-notepadium/" 
         target="_blank" rel="noopener noreferrer">Notepadium</a></p></div>
 </section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
-            onload="renderMathInElement(document.body);"></script></body>
+            onload="renderMathInElement(document.body);"></script>
+
+
+
+
+<style>
+img[src$='#center'] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style></body>
 
 </html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.76.3" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark"><title>「端到端的身份认证和访问控制」0x01：信任的传递&nbsp;&ndash;&nbsp;Melkor&#39;s Blog</title><link rel="stylesheet" href="/css/core.min.2d6818c3774c8f680c9da7b88d43d6c8c8c532ce07a9b5b0e530590cecc120d7cff31eba698555558c2dfff962a8b62a.css" integrity="sha384-LWgYw3dMj2gMnae4jUPWyMjFMs4HqbWw5TBZDOzBINfP8x66aYVVVYwt//liqLYq"><meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="「端到端的身份认证和访问控制」0x01：信任的传递" /><body><section id="header">
+    <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Melkor's Blog</span></a></span>
+        <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/tags/">标签</a><a class="nav item" href="/about">关于我</a></nav></div></span></div></section><section id="content"><div class="article-container"><section class="article header">
+    <h1 class="article title">「端到端的身份认证和访问控制」0x01：信任的传递</h1><p class="article date">2021-03-07<span class="reading-time"> • 预计阅读时间 4 分钟</span></p></section><article class="article markdown-body"><blockquote>
+<p>有了明确的目标后，我们需要开始考虑整个系统如何建立起来。</p>
+</blockquote>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+title [每个服务都进行身份认证]
+actor 用户 as User
+archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;
+archimate #Technology &quot;认证服务&quot; as AuthServer &lt;&lt;technology-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend1 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend2 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend3 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend4 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend5 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend6 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend7 &lt;&lt;business-service&gt;&gt;
+archimate #Technology &quot;身份认证&quot; as Auth &lt;&lt;component&gt;&gt;
+User -Down-&gt; Boundary
+Boundary -Right-&gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&gt; Boundary: 认证结果
+Boundary -Down-&gt; Backend1: 2. 请求后台
+Boundary -Down-&gt; Backend2: 2. 请求后台
+Backend1 -Down-&gt; Backend3
+Backend1 -Down-&gt; Backend4
+Backend2 -Down-&gt; Backend5
+Backend4 -Down-&gt; Backend6
+Backend5 -Down-&gt; Backend7
+Backend1 -[dotted]Down- Auth
+Backend2 -[dotted]Down- Auth
+Backend3 -[dotted]Down- Auth
+Backend4 -[dotted]Down- Auth
+Backend5 -[dotted]Down- Auth
+Backend6 -[dotted]Down- Auth
+Backend7 -[dotted]Down- Auth
+@enduml
+</code></pre><p>可以看到，其实在接入层应该已经做了身份认证，后面的服务还要做身份认证无非是因为无法确保请求真的做了这个认证，因此这个问题其实可以转化为「如何让后面的服务拿到认证的结果」。这是一种<strong>信任的传递</strong>，不依赖于任何服务的部署方式。我们只要将认证结果传递下去，只要后面的服务可以验证这个认证结果，就可以确保请求真的经过了身份认证。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+title [信任的传递]
+actor 用户 as User
+archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;
+archimate #Technology &quot;认证服务&quot; as AuthServer &lt;&lt;technology-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend1 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend2 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend3 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend4 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend5 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend6 &lt;&lt;business-service&gt;&gt;
+archimate #Business &quot;后台服务&quot; as Backend7 &lt;&lt;business-service&gt;&gt;
+archimate #Technology &quot;身份认证&quot; as Auth &lt;&lt;component&gt;&gt;
+User -Down-&gt; Boundary
+Boundary -Right-&gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&gt; Boundary: 认证结果
+Boundary -Down-&gt; Backend1: 2. 请求后台\n(认证结果)
+Boundary -Down-&gt; Backend2: 2. 请求后台\n(认证结果)
+Backend1 -Down-&gt; Backend3: (认证结果)
+Backend1 -Down-&gt; Backend4: (认证结果)
+Backend2 -Down-&gt; Backend5: (认证结果)
+Backend4 -Down-&gt; Backend6: (认证结果)
+Backend5 -Down-&gt; Backend7: (认证结果)
+Backend1 -[dotted]Down- Auth
+Backend2 -[dotted]Down- Auth
+Backend3 -[dotted]Down- Auth
+Backend4 -[dotted]Down- Auth
+Backend5 -[dotted]Down- Auth
+Backend6 -[dotted]Down- Auth
+Backend7 -[dotted]Down- Auth
+@enduml
+</code></pre><p>身份认证显然是访问控制的前提，而当这样的信任传递建立起来以后，后面的服务就可以拿着认证结果进行端到端的访问控制了。比如前文举的坐飞机的例子，实际上只有柜台换登机牌的人进行了身份认证（拿身份证对着看人脸、查行程），生成了认证结果（登机牌），后面的工作人员并不太关心你拿的是不是你的登机牌（虽然理论上最好也关心一下），登机口的工作人员验证了一下登机牌的真假，同时确认登机牌上写的航班是不是本次航班，再后面的工作人员就只看登机牌上写的航班是不是本次航班了。这就是一个信任传递的过程。</p>
+<p>可想而知，如果每个地方的工作人员都拿着身份证和相应的联网设备去验证身份证真假、你是不是身份证上的人、你的身份证有没有绑定当次航班这几项信息，虽然确认更安全了，但是成本也明显上升了。前文也着重提到了，安全没有100%，适合当前情况才是最好的。</p>
+<h3 id="将认证方式统一起来">将认证方式统一起来</h3>
+<p>一个系统中可能有很多种身份认证的方式，认证可能用到了各种各样的因子，认证的具体方法也不尽相同，但本质上都是一样的（确认请求来源身份），因此利用「认证结果」这个概念，我们可以将各种不同的认证方法产生的结果统一成一种表现形式，对后台服务屏蔽细节，这样不管系统中增加多少种认证因子和认证方式，后台服务都可以自动兼容，大大降低了认证的工作量。</p>
+<pre><code class="language-plantuml" data-lang="plantuml">@startuml
+title [认证]
+认证方式 &quot;1&quot; -- &quot;0..*&quot; 认证结果
+认证方式 o-- 认证因子
+@enduml
+</code></pre><blockquote>
+<p>从这个关系可以看出，<strong>认证结果</strong>中应该存放<strong>认证方式的类型</strong>，而<strong>认证因子</strong>实际上未必真的要放在<strong>认证方式</strong>或者<strong>认证结果</strong>中，甚至用「A认证方式是先认证因子X然后认证因子Y」这种方法约定好即可。</p>
+</blockquote>
+<p>至此，我们可以把「认证结果」称为「票据」，这跟实际生活中的各类票据（车票、记名门票、登机牌等等）起到的作用一样，用于标记身份和权限。票据中应该起码存放<strong>认证方法</strong>和<strong>身份信息</strong>。</p>
+</article><section class="article labels"><a class="tag" href=/tags/%E6%8A%80%E6%9C%AF/>技术</a><a class="tag" href=/tags/%E5%AE%89%E5%85%A8/>安全</a></section><section class="article license"><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">知识共享署名-相同方式共享 4.0 国际许可协议</a>进行许可。</section>
+</div>
+<div class="article bottom"><section class="article navigation"><p><a class="link" href="/posts/authentication-authorization-0x00/"><span class="iconfont icon-article"></span>「端到端的身份认证和访问控制」0x00：问题的提出</a></p></section><section class="article discussion"><div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "melkor-blog" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a></section></div></section><section id="footer"><div class="footer-wrap">
+    <p class="copyright">Copyright @ 2021 Melkor</p>
+    <p class="powerby"><span>Powered&nbsp;by&nbsp;</span><a href="https://gohugo.io" 
+        target="_blank" rel="noopener noreferrer">Hugo</a><span>&nbsp;&amp;&nbsp;</span><a href="https://themes.gohugo.io/hugo-notepadium/" 
+        target="_blank" rel="noopener noreferrer">Notepadium</a></p></div>
+</section><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/&#43;DiW/UqRcLbRjq" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l&#43;B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd&#43;qj&#43;o24G5ZU2zJz" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+            onload="renderMathInElement(document.body);"></script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/plantuml-encoder@1.4.0/dist/plantuml-encoder.min.js" integrity="sha256-eRScmk4VrcNB654K41xHWfTcj/+u+spbMkI7g+cAA+k=" crossorigin="anonymous"></script>
+<script>
+(function(){
+  let plantumlPrefix = "language-plantuml";
+  Array.prototype.forEach.call(document.querySelectorAll("[class^=" + plantumlPrefix + "]"), function(code){
+    code.parentNode.style = "text-align: center;";
+    let image = document.createElement("IMG");
+    image.loading = 'lazy'; 
+    image.src = 'http://www.plantuml.com/plantuml/svg/' + plantumlEncoder.encode(code.innerText);
+    code.parentNode.insertBefore(image, code);
+    code.style.display = 'none';
+  });
+})();
+</script>
+
+
+<style>
+img[src$='#center'] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style></body>
+
+</html>

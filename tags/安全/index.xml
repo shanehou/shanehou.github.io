@@ -6,19 +6,107 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
     <copyright>Copyright @ 2021 Melkor</copyright>
-    <lastBuildDate>Sat, 30 Jan 2021 14:40:02 +0800</lastBuildDate>
+    <lastBuildDate>Sun, 07 Mar 2021 14:10:08 +0800</lastBuildDate>
     
         <atom:link href="https://melkor.me/tags/%E5%AE%89%E5%85%A8/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>端到端的身份认证和访问控制：0x00 问题的提出</title>
+      <title>「端到端的身份认证和访问控制」0x01：信任的传递</title>
+      <link>https://melkor.me/posts/authentication-authorization-0x01/</link>
+      <pubDate>Sun, 07 Mar 2021 14:10:08 +0800</pubDate>
+      
+      <guid>https://melkor.me/posts/authentication-authorization-0x01/</guid>
+      <description>&lt;blockquote&gt;
+&lt;p&gt;有了明确的目标后，我们需要开始考虑整个系统如何建立起来。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [每个服务都进行身份认证]
+actor 用户 as User
+archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;认证服务&amp;quot; as AuthServer &amp;lt;&amp;lt;technology-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend1 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend2 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend3 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend4 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend5 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend6 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend7 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;身份认证&amp;quot; as Auth &amp;lt;&amp;lt;component&amp;gt;&amp;gt;
+User -Down-&amp;gt; Boundary
+Boundary -Right-&amp;gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&amp;gt; Boundary: 认证结果
+Boundary -Down-&amp;gt; Backend1: 2. 请求后台
+Boundary -Down-&amp;gt; Backend2: 2. 请求后台
+Backend1 -Down-&amp;gt; Backend3
+Backend1 -Down-&amp;gt; Backend4
+Backend2 -Down-&amp;gt; Backend5
+Backend4 -Down-&amp;gt; Backend6
+Backend5 -Down-&amp;gt; Backend7
+Backend1 -[dotted]Down- Auth
+Backend2 -[dotted]Down- Auth
+Backend3 -[dotted]Down- Auth
+Backend4 -[dotted]Down- Auth
+Backend5 -[dotted]Down- Auth
+Backend6 -[dotted]Down- Auth
+Backend7 -[dotted]Down- Auth
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到，其实在接入层应该已经做了身份认证，后面的服务还要做身份认证无非是因为无法确保请求真的做了这个认证，因此这个问题其实可以转化为「如何让后面的服务拿到认证的结果」。这是一种&lt;strong&gt;信任的传递&lt;/strong&gt;，不依赖于任何服务的部署方式。我们只要将认证结果传递下去，只要后面的服务可以验证这个认证结果，就可以确保请求真的经过了身份认证。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [信任的传递]
+actor 用户 as User
+archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;认证服务&amp;quot; as AuthServer &amp;lt;&amp;lt;technology-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend1 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend2 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend3 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend4 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend5 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend6 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend7 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;身份认证&amp;quot; as Auth &amp;lt;&amp;lt;component&amp;gt;&amp;gt;
+User -Down-&amp;gt; Boundary
+Boundary -Right-&amp;gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&amp;gt; Boundary: 认证结果
+Boundary -Down-&amp;gt; Backend1: 2. 请求后台\n(认证结果)
+Boundary -Down-&amp;gt; Backend2: 2. 请求后台\n(认证结果)
+Backend1 -Down-&amp;gt; Backend3: (认证结果)
+Backend1 -Down-&amp;gt; Backend4: (认证结果)
+Backend2 -Down-&amp;gt; Backend5: (认证结果)
+Backend4 -Down-&amp;gt; Backend6: (认证结果)
+Backend5 -Down-&amp;gt; Backend7: (认证结果)
+Backend1 -[dotted]Down- Auth
+Backend2 -[dotted]Down- Auth
+Backend3 -[dotted]Down- Auth
+Backend4 -[dotted]Down- Auth
+Backend5 -[dotted]Down- Auth
+Backend6 -[dotted]Down- Auth
+Backend7 -[dotted]Down- Auth
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;身份认证显然是访问控制的前提，而当这样的信任传递建立起来以后，后面的服务就可以拿着认证结果进行端到端的访问控制了。比如前文举的坐飞机的例子，实际上只有柜台换登机牌的人进行了身份认证（拿身份证对着看人脸、查行程），生成了认证结果（登机牌），后面的工作人员并不太关心你拿的是不是你的登机牌（虽然理论上最好也关心一下），登机口的工作人员验证了一下登机牌的真假，同时确认登机牌上写的航班是不是本次航班，再后面的工作人员就只看登机牌上写的航班是不是本次航班了。这就是一个信任传递的过程。&lt;/p&gt;
+&lt;p&gt;可想而知，如果每个地方的工作人员都拿着身份证和相应的联网设备去验证身份证真假、你是不是身份证上的人、你的身份证有没有绑定当次航班这几项信息，虽然确认更安全了，但是成本也明显上升了。前文也着重提到了，安全没有100%，适合当前情况才是最好的。&lt;/p&gt;
+&lt;h3 id=&#34;将认证方式统一起来&#34;&gt;将认证方式统一起来&lt;/h3&gt;
+&lt;p&gt;一个系统中可能有很多种身份认证的方式，认证可能用到了各种各样的因子，认证的具体方法也不尽相同，但本质上都是一样的（确认请求来源身份），因此利用「认证结果」这个概念，我们可以将各种不同的认证方法产生的结果统一成一种表现形式，对后台服务屏蔽细节，这样不管系统中增加多少种认证因子和认证方式，后台服务都可以自动兼容，大大降低了认证的工作量。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [认证]
+认证方式 &amp;quot;1&amp;quot; -- &amp;quot;0..*&amp;quot; 认证结果
+认证方式 o-- 认证因子
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;blockquote&gt;
+&lt;p&gt;从这个关系可以看出，&lt;strong&gt;认证结果&lt;/strong&gt;中应该存放&lt;strong&gt;认证方式的类型&lt;/strong&gt;，而&lt;strong&gt;认证因子&lt;/strong&gt;实际上未必真的要放在&lt;strong&gt;认证方式&lt;/strong&gt;或者&lt;strong&gt;认证结果&lt;/strong&gt;中，甚至用「A认证方式是先认证因子X然后认证因子Y」这种方法约定好即可。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;至此，我们可以把「认证结果」称为「票据」，这跟实际生活中的各类票据（车票、记名门票、登机牌等等）起到的作用一样，用于标记身份和权限。票据中应该起码存放&lt;strong&gt;认证方法&lt;/strong&gt;和&lt;strong&gt;身份信息&lt;/strong&gt;。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>「端到端的身份认证和访问控制」0x00：问题的提出</title>
       <link>https://melkor.me/posts/authentication-authorization-0x00/</link>
       <pubDate>Sat, 30 Jan 2021 14:40:02 +0800</pubDate>
       
       <guid>https://melkor.me/posts/authentication-authorization-0x00/</guid>
       <description>&lt;blockquote&gt;
-&lt;p&gt;这个系列的文章将分享我对「端到端身份认证和访问控制」这个在应用安全领域很重要的问题的解决思路。整个系列将分为「问题的提出」「常见方案及缺点」「身份认证的方法」「访问控制的方法」几个部分。&lt;/p&gt;
+&lt;p&gt;这个系列的文章将分享我对「端到端身份认证和访问控制」这个在应用安全领域很重要的问题的理解和解决思路。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id=&#34;什么是身份认证和访问控制&#34;&gt;什么是「身份认证」和「访问控制」？&lt;/h2&gt;
 &lt;p&gt;简单来说，身份认证就是&lt;strong&gt;确认发起者的身份&lt;/strong&gt;，访问控制就是&lt;strong&gt;确认发起者有权做这件事&lt;/strong&gt;。这两者是系统应用层安全的主要保障手段。&lt;/p&gt;
@@ -46,24 +134,23 @@
 &lt;h2 id=&#34;什么又是端到端&#34;&gt;什么又是「端到端」？&lt;/h2&gt;
 &lt;p&gt;以一个生活中常见的场景为例。我们去餐厅吃饭，坐下后服务员会问我们要点什么菜；服务员告诉后厨需要做什么菜；后厨的人根据送来的订单决定接下来做什么菜；做好后服务员把菜从后台端给顾客；顾客吃完后去结账。&lt;/p&gt;
 &lt;p&gt;当然，现在的餐厅很多都变成了扫码点餐、iPad点餐或者给张单子让顾客自己画，即使需要服务员点餐的，服务员也可能手里拿一个本子或者机器记录好顾客点的菜品，结账时不会直接问服务员。但是为了说明这个问题，我还是以传统苍蝇小馆子的模式为例。经过一些抽象和简化，整个流程大概是这样的：&lt;/p&gt;
-&lt;div class=&#34;mermaid&#34; align=&#34;center&#34;&gt;
-  
-sequenceDiagram
-    participant Customer as 顾客
-    participant Waiter as 服务员
-    participant Counter as 收银员
-    participant Kitchen as 后厨
-
-    Customer -&gt;&gt; Customer: 选菜
-    Customer -&gt;&gt; Waiter: 上菜
-    Waiter -&gt;&gt; Kitchen: 制作
-    Kitchen -&gt;&gt; Waiter: 送菜
-    Customer -&gt;&gt; Customer: 用餐
-    Customer -&gt;&gt; Counter: 结账
-    Counter -&gt;&gt; Customer: 支付
-
-&lt;/div&gt;
-&lt;p&gt;可以看出来，在这个「产品」中，安全的核心在于服务员——我们点的菜是经过服务员确认才告知后厨的，结账的依据也要依赖服务员的可靠性。当然，在苍蝇小馆子里，服务员和收银员可能是同一个人，但是服务员和后厨一般不会重合，收银员和顾客也不会直接找后厨。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [到餐厅吃饭]
+actor 顾客 as Customer
+actor 服务员 as Waiter
+actor 厨师 as Cook
+actor 收银员 as Counter
+== 吃前 ==
+Customer -&amp;gt; Customer: 选菜
+Customer -&amp;gt; Waiter: 上菜
+Waiter -&amp;gt; Cook: 做菜
+== 吃中 ==
+Cook -&amp;gt; Waiter: 送菜
+Customer -&amp;gt; Customer: 用餐
+== 吃后 ==
+Customer -&amp;gt; Counter: 结账
+@end
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看出来，在这个「产品」中，安全的核心在于服务员——我们点的菜是经过服务员确认才告知后厨的，结账的依据也要依赖服务员的可靠性。当然，在苍蝇小馆子里，服务员和收银员可能是同一个人，但是服务员和后厨一般不会重合，收银员和顾客也不会直接找后厨。&lt;/p&gt;
 &lt;p&gt;那么，考虑以下三种情况：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;我跟服务员说要点一份鱼香肉丝，但是又冒充服务员去跟后厨说要一份回锅肉，并且自己悄悄端回来吃了，最后去结账的时候这份回锅肉就变成了没点过的菜，但是后厨又实实在在做了，于是我一分钱不花吃了一份回锅肉。&lt;/li&gt;
@@ -72,11 +159,40 @@ sequenceDiagram
 &lt;/ol&gt;
 &lt;p&gt;如果把服务员当作是接入层，后厨当作是后台，我们显然会发现一个问题：接入层有没有进行身份认证和访问控制，后台其实不知道，只能无条件信任了接入层传来的请求。在这种情况下，如果接入层有意或无意没做好身份认证，或者接入层可以被绕过，那么整个系统的安全性就不能得到保证了。&lt;/p&gt;
 &lt;p&gt;而端到端是指，每个要执行用户请求的地方都需要有能力验证用户的身份和权限。在餐厅的例子里，就是指后厨中每个人都要对服务员给的做菜要求提出质疑：顾客跟服务员说了么？这是不是顾客要的？顾客能买得起吗？&lt;/p&gt;
+&lt;p&gt;另一个典型的场景是坐飞机。去柜台值机后我们会拿到一张「登机牌」，这就是证明你能登上特定班次飞机的凭据。登机牌上有好几联，安检处、候机厅的登机口、登机口到飞机的走廊中、飞机舱门这几个地方都可能有人会去反复查看登机牌，每个人还会撕掉其中一联。这个过程就是典型的端到端访问控制——后面的工作人员没有因为前面的人已经看过了而选择不看，每个地理上的环节都需要重新确认，「撕」这个动作代表工作人员验证成功了，并且这个结果是一次性的。当然，现在越来越多人网上值机，使用身份证通过全部的验证过程，但这只是验证方法的优化，并不代表验证本身被取消了。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;你可能还会想到游乐园的门票等场景，但是这类场景和我们要讨论的问题稍有区别——大多数门票是不记名的，也就是说买票时并不需要认证身份，只要你愿意交钱，你可以买很多票，也可以帮别人买票，所以不太适合我们的讨论。&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;h3 id=&#34;加上端到端就很难了么&#34;&gt;加上端到端就很难了么？&lt;/h3&gt;
 &lt;p&gt;在微服务体系下，整个系统中可能有成百上千的服务。一个请求进来先进行身份认证，通过后以树状散开，拿其中几个参数去请求一个服务、另外几个参数去请求另一个服务，被调用到的服务又调用了别的服务，这些服务可能要进行进一步的访问控制。最终一个请求从进入到返回，可能经过了几十个服务。&lt;/p&gt;
-&lt;p&gt;&lt;img  src=&#34;https://melkor.me/authentication-authorization/%e5%be%ae%e6%9c%8d%e5%8a%a1%e7%b3%bb%e7%bb%9f%e4%b8%ad%e8%af%b7%e6%b1%82%e6%a0%91%e7%8a%b6%e6%95%a3%e5%bc%80.svg&#34;
-        alt=&#34;微服务系统中请求树状散开&#34;/&gt;&lt;/p&gt;
-&lt;p&gt;在这种情况下，&lt;strong&gt;每个&lt;/strong&gt;后台服务的开发者都应该考虑如下三个问题：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [微服务系统中请求树状散开]
+actor 用户 as User
+archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;认证服务&amp;quot; as AuthServer &amp;lt;&amp;lt;technology-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend1 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend2 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend3 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend4 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend5 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend6 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend7 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;访问控制&amp;quot; as Auth &amp;lt;&amp;lt;component&amp;gt;&amp;gt;
+User -Down-&amp;gt; Boundary
+Boundary -Right-&amp;gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&amp;gt; Boundary: 认证结果
+Boundary -Down-&amp;gt; Backend1: 2. 请求后台
+Boundary -Down-&amp;gt; Backend2: 2. 请求后台
+Backend1 -Down-&amp;gt; Backend3
+Backend1 -Down-&amp;gt; Backend4
+Backend2 -Down-&amp;gt; Backend5
+Backend4 -Down-&amp;gt; Backend6
+Backend5 -Down-&amp;gt; Backend7
+Backend3 -[dotted]Left- Auth
+Backend4 -[dotted]Left- Auth
+Backend6 -[dotted]Left- Auth
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;在这种情况下，&lt;strong&gt;每个&lt;/strong&gt;后台服务的开发者都应该考虑如下三个问题：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;这个请求真的经过了接入层吗？
 &lt;ul&gt;
@@ -99,9 +215,41 @@ sequenceDiagram
 &lt;/ol&gt;
 &lt;h3 id=&#34;层层传递认证材料&#34;&gt;层层传递认证材料？&lt;/h3&gt;
 &lt;p&gt;一个显而易见而简单粗暴的方案，显然是将认证材料传递下去，每个后台服务都重新请求认证服务进行身份认证：&lt;/p&gt;
-&lt;p&gt;&lt;img  src=&#34;https://melkor.me/authentication-authorization/%e5%b1%82%e5%b1%82%e4%bc%a0%e9%80%92%e8%ae%a4%e8%af%81%e6%9d%90%e6%96%99.svg&#34;
-        alt=&#34;层层传递认证材料&#34;/&gt;&lt;/p&gt;
-&lt;p&gt;但是这样的方法存在以下问题：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [层层传递认证材料]
+actor 用户 as User
+archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;认证服务&amp;quot; as AuthServer &amp;lt;&amp;lt;technology-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend1 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend2 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend3 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend4 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend5 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend6 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend7 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;访问控制&amp;quot; as Auth &amp;lt;&amp;lt;component&amp;gt;&amp;gt;
+User -Down-&amp;gt; Boundary
+Boundary -Right-&amp;gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&amp;gt; Boundary: 认证结果
+Boundary -Down-&amp;gt; Backend1: 2. 请求后台
+Boundary -Down-&amp;gt; Backend2: 2. 请求后台
+Backend1 -Down-&amp;gt; Backend3
+Backend1 -Down-&amp;gt; Backend4
+Backend2 -Down-&amp;gt; Backend5
+Backend4 -Down-&amp;gt; Backend6
+Backend5 -Down-&amp;gt; Backend7
+Backend3 -[dashed]Left- Auth
+Backend4 -[dashed]Left- Auth
+Backend6 -[dashed]Left- Auth
+Backend1 -[dashed]-&amp;gt; AuthServer
+Backend2 -[dashed]-&amp;gt; AuthServer
+Backend3 -[dashed]Up-&amp;gt; AuthServer
+Backend4 -[dashed]-&amp;gt; AuthServer
+Backend5 -[dashed]-&amp;gt; AuthServer
+Backend6 -[dashed]-&amp;gt; AuthServer
+Backend7 -[dashed]-&amp;gt; AuthServer
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;但是这样的方法存在以下问题：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;安全性：认证材料可能包含敏感信息，层层传递增加了泄漏风险&lt;/li&gt;
 &lt;li&gt;可用性：认证服务要承受原来数倍乃至数十倍的请求量，成了系统中的大单点&lt;/li&gt;
@@ -109,9 +257,34 @@ sequenceDiagram
 &lt;/ul&gt;
 &lt;h3 id=&#34;各自约定认证方法&#34;&gt;各自约定认证方法？&lt;/h3&gt;
 &lt;p&gt;另一个思路简单来说就是全局放任不管，任由服务开发者之间自行想办法解决：&lt;/p&gt;
-&lt;p&gt;&lt;img  src=&#34;https://melkor.me/authentication-authorization/%e5%90%84%e8%87%aa%e7%ba%a6%e5%ae%9a%e8%ae%a4%e8%af%81%e6%96%b9%e6%b3%95.svg&#34;
-        alt=&#34;各自约定认证方法&#34;/&gt;&lt;/p&gt;
-&lt;p&gt;这种思路显然也是不可取的：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+title [各自约定认证方法]
+actor 用户 as User
+archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;认证服务&amp;quot; as AuthServer &amp;lt;&amp;lt;technology-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend1 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend2 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend3 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend4 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend5 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend6 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Business &amp;quot;后台服务&amp;quot; as Backend7 &amp;lt;&amp;lt;business-service&amp;gt;&amp;gt;
+archimate #Technology &amp;quot;访问控制&amp;quot; as Auth &amp;lt;&amp;lt;component&amp;gt;&amp;gt;
+User -Down-&amp;gt; Boundary
+Boundary -Right-&amp;gt; AuthServer: 1. 身份认证
+AuthServer -[dashed]Right-&amp;gt; Boundary: 认证结果
+Boundary -Down-&amp;gt; Backend1: 2. 请求后台
+Boundary -Down-&amp;gt; Backend2: 2. 请求后台
+Backend1 -Down-&amp;gt; Backend3: 约定RSA公私钥
+Backend1 -Down-&amp;gt; Backend4
+Backend2 -Down-&amp;gt; Backend5: 约定AES对称密钥
+Backend4 -Down-&amp;gt; Backend6: 约定哈希盐
+Backend5 -Down-&amp;gt; Backend7
+Backend3 -[dotted]Left- Auth
+Backend4 -[dotted]Left- Auth
+Backend6 -[dotted]Left- Auth
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这种思路显然也是不可取的：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;安全性：开发者们对安全的理解和开发水平参差不齐，很容易有安全漏洞&lt;/li&gt;
 &lt;li&gt;可用性：一旦出现问题，缺乏统一的容灾手段，全凭开发者良心&lt;/li&gt;
@@ -119,13 +292,17 @@ sequenceDiagram
 &lt;/ul&gt;
 &lt;p&gt;需要额外说明的是，很多系统都有服务之间的上下游认证，即每个服务可以规定哪些服务能调用自己。但是这种上下游的认证和端到端认证要解决的不是同一层级的问题，前者无法真的解决后者的问题——一方面，如果某服务A只允许B来访问，但是如果访问B的请求没有真的经过认证，即使全链路都已经设定好了所有服务的上下游调用权限，A拿到的请求仍然有问题，仍然无能为力；另一方面，这种靠上下游认证的方式来实现端到端的认证，会造成安全问题和服务调用关系（拓扑结构）的强耦合，一旦调用关系有变更而忘记更新上下游认证权限，那所有请求将被系统误拦，造成更大的问题。&lt;/p&gt;
 &lt;hr&gt;
-&lt;p&gt;经过上面的分析，我们可以发现，如果有一套完整的组件可以把身份认证和访问控制的事情一劳永逸地解决，显然可以在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全有两个很容易被忽略的特点：&lt;/p&gt;
+&lt;p&gt;经过上面的分析，我们可以发现，做一套完整的组件可以把身份认证和访问控制的事情一劳永逸地解决，在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全组件有三个很容易被忽略的特点：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;安全没有100%，所有的安全手段都只能是提高作恶的成本，不能确保安全事件不发生，并且提升安全性的成本会随着安全性本身的提升而大幅增加，从98分提升到99分的难度可能比从0分提升到90分还要高。&lt;/li&gt;
 &lt;li&gt;想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全组件在组织内的推广和实施是格外困难的。&lt;/li&gt;
+&lt;li&gt;一个安全系统本身也要考虑可用性的问题，业务一旦接入，理论上说可用性一定会降低，因此安全系统的可用性尤为关键。如果安全系统的可用性只能做到3个9，那整个系统的可用性无论如何也无法做到4个9。这就给安全系统的推广带来了更多的阻力。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;正因为如此，本文所描述的安全问题对于大多数组织和系统来说都是重要而不紧急的问题。由于工作关系，本文介绍的问题和解决方案可能更适合于较大的团队和较为重要的系统，不过对于问题的重要和紧急四象限来说，反而是重要不紧急的问题最容易被忽略，拖着拖着变成了既重要又紧急的问题，这时候再去着手解决时间就比较紧迫，实现上可能要有所妥协，可能留下债务，长期来看会增加整个团队的成本。&lt;/p&gt;
-&lt;p&gt;接下来的文章将介绍解决本问题的思路和方案。&lt;/p&gt;
+&lt;p&gt;正因为如此，本文所描述的安全问题对于大多数组织和系统来说都是重要而不紧急的问题。由于工作关系，本文介绍的问题和解决方案可能更适合于较大的团队和对安全要求较高的系统。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;不过对于问题的重要和紧急四象限来说，反而是重要不紧急的问题最容易被忽略，拖着拖着变成了既重要又紧急的问题，这时候再去着手解决时间就比较紧迫，实现上可能要有所妥协，可能留下债务，长期来看会增加整个团队的成本。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;那么，这个系统该怎么做？如何快速在组织内推广起来，以尽可能低的成本来达成安全的目的，同时对整个系统的可用性影响最小呢？&lt;/p&gt;
 </description>
     </item>
     
