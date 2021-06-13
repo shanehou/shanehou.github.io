@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.76.3" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="zh"><meta charset="utf-8"><meta name="generator" content="Hugo 0.83.1" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="supported-color-schemes" content="light dark"><title>「端到端的身份认证和访问控制」0x00：问题的提出&nbsp;&ndash;&nbsp;Melkor&#39;s Blog</title><link rel="stylesheet" href="/css/core.min.2d6818c3774c8f680c9da7b88d43d6c8c8c532ce07a9b5b0e530590cecc120d7cff31eba698555558c2dfff962a8b62a.css" integrity="sha384-LWgYw3dMj2gMnae4jUPWyMjFMs4HqbWw5TBZDOzBINfP8x66aYVVVYwt//liqLYq"><meta name="twitter:card" content="summary" />
+<meta name="supported-color-schemes" content="light dark"><title>「端到端的身份认证和访问控制」0x00：问题的提出&nbsp;&ndash;&nbsp;Melkor&#39;s Blog</title><link rel="stylesheet" href="/css/core.min.b6fd8322ce7199ec6b36a0e034929850403b9519f1691136ce02d86f1073f6cdff9019aafe71d349d1979616d05ee8e0.css" integrity="sha384-tv2DIs5xmexrNqDgNJKYUEA7lRnxaRE2zgLYbxBz9s3/kBmq/nHTSdGXlhbQXujg"><meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="「端到端的身份认证和访问控制」0x00：问题的提出" /><body><section id="header">
     <div class="header wrap"><span class="header left-side"><a class="site home" href="/"><span class="site name">Melkor's Blog</span></a></span>
         <span class="header right-side"><div class="nav wrap"><nav class="nav"><a class="nav item" href="/tags/">标签</a><a class="nav item" href="/about">关于我</a></nav></div></span></div></section><section id="content"><div class="article-container"><section class="article header">
@@ -35,6 +35,7 @@
 <p>以一个生活中常见的场景为例。我们去餐厅吃饭，坐下后服务员会问我们要点什么菜；服务员告诉后厨需要做什么菜；后厨的人根据送来的订单决定接下来做什么菜；做好后服务员把菜从后台端给顾客；顾客吃完后去结账。</p>
 <p>当然，现在的餐厅很多都变成了扫码点餐、iPad点餐或者给张单子让顾客自己画，即使需要服务员点餐的，服务员也可能手里拿一个本子或者机器记录好顾客点的菜品，结账时不会直接问服务员。但是为了说明这个问题，我还是以传统苍蝇小馆子的模式为例。经过一些抽象和简化，整个流程大概是这样的：</p>
 <pre><code class="language-plantuml" data-lang="plantuml">@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [到餐厅吃饭]
 actor 顾客 as Customer
 actor 服务员 as Waiter
@@ -66,6 +67,7 @@ Customer -&gt; Counter: 结账
 <h3 id="加上端到端就很难了么">加上端到端就很难了么？</h3>
 <p>在微服务体系下，整个系统中可能有成百上千的服务。一个请求进来先进行身份认证，通过后以树状散开，拿其中几个参数去请求一个服务、另外几个参数去请求另一个服务，被调用到的服务又调用了别的服务，这些服务可能要进行进一步的访问控制。最终一个请求从进入到返回，可能经过了几十个服务。</p>
 <pre><code class="language-plantuml" data-lang="plantuml">@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [微服务系统中请求树状散开]
 actor 用户 as User
 archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;
@@ -116,6 +118,7 @@ Backend6 -[dotted]Left- Auth
 <h3 id="层层传递认证材料">层层传递认证材料？</h3>
 <p>一个显而易见而简单粗暴的方案，显然是将认证材料传递下去，每个后台服务都重新请求认证服务进行身份认证：</p>
 <pre><code class="language-plantuml" data-lang="plantuml">@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [层层传递认证材料]
 actor 用户 as User
 archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;
@@ -138,9 +141,9 @@ Backend1 -Down-&gt; Backend4
 Backend2 -Down-&gt; Backend5
 Backend4 -Down-&gt; Backend6
 Backend5 -Down-&gt; Backend7
-Backend3 -[dashed]Left- Auth
-Backend4 -[dashed]Left- Auth
-Backend6 -[dashed]Left- Auth
+Backend3 -[dotted]Left- Auth
+Backend4 -[dotted]Left- Auth
+Backend6 -[dotted]Left- Auth
 Backend1 -[dashed]-&gt; AuthServer
 Backend2 -[dashed]-&gt; AuthServer
 Backend3 -[dashed]Up-&gt; AuthServer
@@ -158,6 +161,7 @@ Backend7 -[dashed]-&gt; AuthServer
 <h3 id="各自约定认证方法">各自约定认证方法？</h3>
 <p>另一个思路简单来说就是全局放任不管，任由服务开发者之间自行想办法解决：</p>
 <pre><code class="language-plantuml" data-lang="plantuml">@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [各自约定认证方法]
 actor 用户 as User
 archimate #Application &quot;接入层服务&quot; as Boundary &lt;&lt;application-service&gt;&gt;
@@ -192,10 +196,10 @@ Backend6 -[dotted]Left- Auth
 </ul>
 <p>需要额外说明的是，很多系统都有服务之间的上下游认证，即每个服务可以规定哪些服务能调用自己。但是这种上下游的认证和端到端认证要解决的不是同一层级的问题，前者无法真的解决后者的问题——一方面，如果某服务A只允许B来访问，但是如果访问B的请求没有真的经过认证，即使全链路都已经设定好了所有服务的上下游调用权限，A拿到的请求仍然有问题，仍然无能为力；另一方面，这种靠上下游认证的方式来实现端到端的认证，会造成安全问题和服务调用关系（拓扑结构）的强耦合，一旦调用关系有变更而忘记更新上下游认证权限，那所有请求将被系统误拦，造成更大的问题。</p>
 <hr>
-<p>经过上面的分析，我们可以发现，做一套完整的组件可以把身份认证和访问控制的事情一劳永逸地解决，在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全组件有三个很容易被忽略的特点：</p>
+<p>经过上面的分析，我们可以发现，搭建一个完整的平台系统可以把身份认证和访问控制的事情一劳永逸地解决，在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全系统有三个很容易被忽略的特点：</p>
 <ol>
 <li>安全没有100%，所有的安全手段都只能是提高作恶的成本，不能确保安全事件不发生，并且提升安全性的成本会随着安全性本身的提升而大幅增加，从98分提升到99分的难度可能比从0分提升到90分还要高。</li>
-<li>想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全组件在组织内的推广和实施是格外困难的。</li>
+<li>想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全系统在组织内的推广和实施是格外困难的。</li>
 <li>一个安全系统本身也要考虑可用性的问题，业务一旦接入，理论上说可用性一定会降低，因此安全系统的可用性尤为关键。如果安全系统的可用性只能做到3个9，那整个系统的可用性无论如何也无法做到4个9。这就给安全系统的推广带来了更多的阻力。</li>
 </ol>
 <p>正因为如此，本文所描述的安全问题对于大多数组织和系统来说都是重要而不紧急的问题。由于工作关系，本文介绍的问题和解决方案可能更适合于较大的团队和对安全要求较高的系统。</p>

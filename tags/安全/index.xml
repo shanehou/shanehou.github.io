@@ -21,6 +21,7 @@
 &lt;p&gt;有了明确的目标后，我们需要开始考虑整个系统如何建立起来。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [每个服务都进行身份认证]
 actor 用户 as User
 archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
@@ -53,6 +54,7 @@ Backend7 -[dotted]Down- Auth
 @enduml
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到，其实在接入层应该已经做了身份认证，后面的服务还要做身份认证无非是因为无法确保请求真的做了这个认证，因此这个问题其实可以转化为「如何让后面的服务拿到认证的结果」。这是一种&lt;strong&gt;信任的传递&lt;/strong&gt;，不依赖于任何服务的部署方式。我们只要将认证结果传递下去，只要后面的服务可以验证这个认证结果，就可以确保请求真的经过了身份认证。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [信任的传递]
 actor 用户 as User
 archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
@@ -88,6 +90,7 @@ Backend7 -[dotted]Down- Auth
 &lt;h3 id=&#34;将认证方式统一起来&#34;&gt;将认证方式统一起来&lt;/h3&gt;
 &lt;p&gt;一个系统中可能有很多种身份认证的方式，认证可能用到了各种各样的因子，认证的具体方法也不尽相同，但本质上都是一样的（确认请求来源身份），因此利用「认证结果」这个概念，我们可以将各种不同的认证方法产生的结果统一成一种表现形式，对后台服务屏蔽细节，这样不管系统中增加多少种认证因子和认证方式，后台服务都可以自动兼容，大大降低了认证的工作量。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [认证]
 认证方式 &amp;quot;1&amp;quot; -- &amp;quot;0..*&amp;quot; 认证结果
 认证方式 o-- 认证因子
@@ -95,7 +98,92 @@ title [认证]
 &lt;/code&gt;&lt;/pre&gt;&lt;blockquote&gt;
 &lt;p&gt;从这个关系可以看出，&lt;strong&gt;认证结果&lt;/strong&gt;中应该存放&lt;strong&gt;认证方式的类型&lt;/strong&gt;，而&lt;strong&gt;认证因子&lt;/strong&gt;实际上未必真的要放在&lt;strong&gt;认证方式&lt;/strong&gt;或者&lt;strong&gt;认证结果&lt;/strong&gt;中，甚至用「A认证方式是先认证因子X然后认证因子Y」这种方法约定好即可。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;至此，我们可以把「认证结果」称为「票据」，这跟实际生活中的各类票据（车票、记名门票、登机牌等等）起到的作用一样，用于标记身份和权限。票据中应该起码存放&lt;strong&gt;认证方法&lt;/strong&gt;和&lt;strong&gt;身份信息&lt;/strong&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;票据&#34;&gt;票据&lt;/h3&gt;
+&lt;p&gt;至此，我们可以把「认证结果」称为「&lt;strong&gt;票据&lt;/strong&gt;」，这跟实际生活中的各类票据（车票、记名门票、登机牌等等）起到的作用一样，用于标记身份和权限。票据中应该起码存放&lt;strong&gt;认证方法&lt;/strong&gt;和&lt;strong&gt;身份信息&lt;/strong&gt;。票据的整个生命周期大概是这样的：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
+title [票据的生命周期]
+start
+:在认证服务中生成;
+note left
+  接入层服务带着身份材料来认证，认证通过后在**本地**生成
+  ----
+  生成后返回给接入层服务，由接入层服务向下调用时自动带上
+end note
+(传)
+note right
+  放在传输协议中，由框架全程自动传输，对业务层透明
+end note
+:在后台服务中验证;
+note left
+  从协议中取出，完成验证
+end note
+stop
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;几个需要注意的地方：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;票据必须&lt;strong&gt;在认证服务本地生成&lt;/strong&gt;，因为这时认证结果在内存中，很难被篡改或伪造——如果身份认证成功后再调用别的服务去生成，那又回到了最开头的问题——这个服务如何确保请求经过了身份认证呢？&lt;/li&gt;
+&lt;li&gt;「接入层服务」是指用户在前端直接访问的后台服务，外部访问接入层一般都是通过HTTP(s)协议（如果前端是App，也有可能是私有协议）。从接入层开始，对于微服务体系的系统来说，内部的协议是统一的，形式上可能是HTTP(s)或者私有的RPC协议，框架需要在协议中自定义一个字段用来存放票据。&lt;/li&gt;
+&lt;li&gt;票据需要&lt;strong&gt;在每次请求时都生成&lt;/strong&gt;，而&lt;strong&gt;不是&lt;/strong&gt;生成后缓存下来；同样地，请求链终止的时候票据也就消失了，&lt;strong&gt;不需要缓存或者落地&lt;/strong&gt;。这么做显然是出于安全考虑，因为理论上每个请求进入系统的时候都会在接入层进行身份认证，因此完全可以每次都生成出来，给一个很短的有效期（比如几秒），有效地避免票据被截取下来干别的事情。&lt;/li&gt;
+&lt;li&gt;票据本身只携带信息，具体的验证还需要业务参与进来，因为只有业务方自己才知道如何去验证身份。比如某请求要查询用户基本信息，则访问获取用户基本信息的服务时，一定会在协议中携带用户的ID，同时请求中的票据里也有一个用户的ID，当两者不一致时即认为需要拦截。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id=&#34;票据类型&#34;&gt;票据类型&lt;/h4&gt;
+&lt;p&gt;由于票据中需要标记票据的具体认证方式，我们可以将不同的认证方式称为&lt;strong&gt;票据类型&lt;/strong&gt;。根据不同产品或功能的情况，接入层的接口的具体形式并不固定，认证方式也可能会根据实际的业务来定。例如：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;桌面版网页上用户通过用户名密码来登录，小程序里用户通过微信客户端完成授权，这两者在系统中的登录态一定是不同的（起码会有不同的标识），此时每次请求的身份认证就是对这个登录态的校验。两种不同的渠道虽然都是验证登录态，但理应算作不同的认证方式（即&lt;strong&gt;不同的票据类型&lt;/strong&gt;），这样不仅在安全上做到了隔离，在突发情况下避免全局一刀切，而且对业务也更为友好，在业务需要区分不同客户端的功能时可以天然支持区分验证。&lt;/li&gt;
+&lt;li&gt;如果有某个敏感操作（比如修改用户登录密码），要求用户额外进行短信验证，验证通过后才能执行的这一次操作，那这次操作对应对应了新的认证方式，是「先验证登录态，再验证短信」，因此后台接口要验证的就是&lt;strong&gt;新的票据类型&lt;/strong&gt;。相应地，生成这种票据的服务要先验证前一种类型的票据合法后才能生成。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
+sprite $aService jar:archimate/application-service
+sprite $bService jar:archimate/business-service
+title [票据类型]
+actor 用户 as User
+rectangle &amp;quot;桌面版网页CGI服务&amp;quot; &amp;lt;&amp;lt;$aService&amp;gt;&amp;gt; #Application {
+  archimate #Application GetInfoWeb as &amp;quot;查询用户信息&amp;quot; &amp;lt;&amp;lt;application-interface&amp;gt;&amp;gt;
+  archimate #Application ModifyPasswordWeb as &amp;quot;修改用户密码&amp;quot; &amp;lt;&amp;lt;application-interface&amp;gt;&amp;gt;
+}
+rectangle &amp;quot;微信小程序CGI服务&amp;quot; &amp;lt;&amp;lt;$aService&amp;gt;&amp;gt; #Application {
+  archimate #Application GetInfoMiniapp as &amp;quot;查询用户信息&amp;quot; &amp;lt;&amp;lt;application-interface&amp;gt;&amp;gt;
+  archimate #Application ModifyPasswordMiniapp as &amp;quot;修改用户密码&amp;quot; &amp;lt;&amp;lt;application-interface&amp;gt;&amp;gt;
+}
+rectangle &amp;quot;用户信息服务&amp;quot; &amp;lt;&amp;lt;$bService&amp;gt;&amp;gt; #Business {
+  archimate #Business GetInfo as &amp;quot;查询用户信息&amp;quot; &amp;lt;&amp;lt;business-interface&amp;gt;&amp;gt;
+  archimate #Business ModifyPassword as &amp;quot;修改用户密码&amp;quot; &amp;lt;&amp;lt;business-interface&amp;gt;&amp;gt;
+}
+note left of GetInfo
+  要求票据的认证方式：
+  * 验证了**桌面版网页登录态**或者**小程序登录态**
+end note
+note right of ModifyPassword
+  要求票据的认证方式：
+  * 先验证了**桌面版网页登录态**或者**小程序登录态**
+  * 再验证了**短信**
+end note
+archimate #Technology WebAuth as &amp;quot;验证桌面版网页登录态&amp;quot; &amp;lt;&amp;lt;technology-interface&amp;gt;&amp;gt;
+archimate #Technology MiniappAuth as &amp;quot;验证微信小程序登录态&amp;quot; &amp;lt;&amp;lt;technology-interface&amp;gt;&amp;gt;
+archimate #Technology MessageAuth as &amp;quot;验证短信&amp;quot; &amp;lt;&amp;lt;technology-interface&amp;gt;&amp;gt;
+note left of MessageAuth
+  要求票据的认证方式：
+  * 验证了**桌面版网页登录态**或者**小程序登录态**
+end note
+User -Down-&amp;gt; GetInfoWeb
+User -Down-&amp;gt; GetInfoMiniapp
+User -Down-&amp;gt; ModifyPasswordWeb
+User -Down-&amp;gt; ModifyPasswordMiniapp
+GetInfoWeb -[dotted]Left-&amp;gt; WebAuth: A1
+GetInfoMiniapp -[dotted]Right-&amp;gt; MiniappAuth: C1
+ModifyPasswordWeb -[dotted]Left-&amp;gt; WebAuth: B1
+ModifyPasswordWeb -[dotted]Down-&amp;gt; MessageAuth: B2
+ModifyPasswordMiniapp -[dotted]Right--&amp;gt; MiniappAuth: D1
+ModifyPasswordMiniapp -[dotted]Down--&amp;gt; MessageAuth: D2
+GetInfoWeb -Down-&amp;gt; GetInfo: A2 查询用户信息
+GetInfoMiniapp -Down-&amp;gt; GetInfo: C2 查询用户信息
+ModifyPasswordWeb -Down-&amp;gt; ModifyPassword: B3 修改用户密码
+ModifyPasswordMiniapp -Down-&amp;gt; ModifyPassword: D3 修改用户密码
+@enduml
+&lt;/code&gt;&lt;/pre&gt;&lt;hr&gt;
+&lt;p&gt;现在我们根据信任的传递原则，推导出了票据和票据类型的概念，实际上已经可以从理论上解决身份认证的问题。但是到目前为止，整个系统是「浮于表面」的，因为身份认证只能说是一个手段或者必要条件，我们最终的目标还是要实现端到端的、精细化的访问控制。不过在这之前，可能你已经要问了：就这？纯理论分析简单，但这「信任的传递」怎么保证可靠？&lt;/p&gt;
 </description>
     </item>
     
@@ -135,6 +223,7 @@ title [认证]
 &lt;p&gt;以一个生活中常见的场景为例。我们去餐厅吃饭，坐下后服务员会问我们要点什么菜；服务员告诉后厨需要做什么菜；后厨的人根据送来的订单决定接下来做什么菜；做好后服务员把菜从后台端给顾客；顾客吃完后去结账。&lt;/p&gt;
 &lt;p&gt;当然，现在的餐厅很多都变成了扫码点餐、iPad点餐或者给张单子让顾客自己画，即使需要服务员点餐的，服务员也可能手里拿一个本子或者机器记录好顾客点的菜品，结账时不会直接问服务员。但是为了说明这个问题，我还是以传统苍蝇小馆子的模式为例。经过一些抽象和简化，整个流程大概是这样的：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [到餐厅吃饭]
 actor 顾客 as Customer
 actor 服务员 as Waiter
@@ -166,6 +255,7 @@ Customer -&amp;gt; Counter: 结账
 &lt;h3 id=&#34;加上端到端就很难了么&#34;&gt;加上端到端就很难了么？&lt;/h3&gt;
 &lt;p&gt;在微服务体系下，整个系统中可能有成百上千的服务。一个请求进来先进行身份认证，通过后以树状散开，拿其中几个参数去请求一个服务、另外几个参数去请求另一个服务，被调用到的服务又调用了别的服务，这些服务可能要进行进一步的访问控制。最终一个请求从进入到返回，可能经过了几十个服务。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [微服务系统中请求树状散开]
 actor 用户 as User
 archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
@@ -216,6 +306,7 @@ Backend6 -[dotted]Left- Auth
 &lt;h3 id=&#34;层层传递认证材料&#34;&gt;层层传递认证材料？&lt;/h3&gt;
 &lt;p&gt;一个显而易见而简单粗暴的方案，显然是将认证材料传递下去，每个后台服务都重新请求认证服务进行身份认证：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [层层传递认证材料]
 actor 用户 as User
 archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
@@ -238,9 +329,9 @@ Backend1 -Down-&amp;gt; Backend4
 Backend2 -Down-&amp;gt; Backend5
 Backend4 -Down-&amp;gt; Backend6
 Backend5 -Down-&amp;gt; Backend7
-Backend3 -[dashed]Left- Auth
-Backend4 -[dashed]Left- Auth
-Backend6 -[dashed]Left- Auth
+Backend3 -[dotted]Left- Auth
+Backend4 -[dotted]Left- Auth
+Backend6 -[dotted]Left- Auth
 Backend1 -[dashed]-&amp;gt; AuthServer
 Backend2 -[dashed]-&amp;gt; AuthServer
 Backend3 -[dashed]Up-&amp;gt; AuthServer
@@ -258,6 +349,7 @@ Backend7 -[dashed]-&amp;gt; AuthServer
 &lt;h3 id=&#34;各自约定认证方法&#34;&gt;各自约定认证方法？&lt;/h3&gt;
 &lt;p&gt;另一个思路简单来说就是全局放任不管，任由服务开发者之间自行想办法解决：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-plantuml&#34; data-lang=&#34;plantuml&#34;&gt;@startuml
+!include https://raw.githubusercontent.com/bschwarz/puml-themes/master/themes/bluegray/puml-theme-bluegray.puml
 title [各自约定认证方法]
 actor 用户 as User
 archimate #Application &amp;quot;接入层服务&amp;quot; as Boundary &amp;lt;&amp;lt;application-service&amp;gt;&amp;gt;
@@ -292,10 +384,10 @@ Backend6 -[dotted]Left- Auth
 &lt;/ul&gt;
 &lt;p&gt;需要额外说明的是，很多系统都有服务之间的上下游认证，即每个服务可以规定哪些服务能调用自己。但是这种上下游的认证和端到端认证要解决的不是同一层级的问题，前者无法真的解决后者的问题——一方面，如果某服务A只允许B来访问，但是如果访问B的请求没有真的经过认证，即使全链路都已经设定好了所有服务的上下游调用权限，A拿到的请求仍然有问题，仍然无能为力；另一方面，这种靠上下游认证的方式来实现端到端的认证，会造成安全问题和服务调用关系（拓扑结构）的强耦合，一旦调用关系有变更而忘记更新上下游认证权限，那所有请求将被系统误拦，造成更大的问题。&lt;/p&gt;
 &lt;hr&gt;
-&lt;p&gt;经过上面的分析，我们可以发现，做一套完整的组件可以把身份认证和访问控制的事情一劳永逸地解决，在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全组件有三个很容易被忽略的特点：&lt;/p&gt;
+&lt;p&gt;经过上面的分析，我们可以发现，搭建一个完整的平台系统可以把身份认证和访问控制的事情一劳永逸地解决，在极大提升安全性的同时，尽可能降低增加的成本。这里说「提升安全性」而不是「保证安全」、说「降低增加的成本」而不是「不增加成本」，是因为做安全系统有三个很容易被忽略的特点：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;安全没有100%，所有的安全手段都只能是提高作恶的成本，不能确保安全事件不发生，并且提升安全性的成本会随着安全性本身的提升而大幅增加，从98分提升到99分的难度可能比从0分提升到90分还要高。&lt;/li&gt;
-&lt;li&gt;想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全组件在组织内的推广和实施是格外困难的。&lt;/li&gt;
+&lt;li&gt;想增加系统的安全性，一定会给开发者带来额外的工作量，并且这种额外的工作量在没出事的时候看起来毫无产出，因此肯定是没有人愿意做的，但是一旦出事又会觉得是安全团队做得不好，因此安全系统在组织内的推广和实施是格外困难的。&lt;/li&gt;
 &lt;li&gt;一个安全系统本身也要考虑可用性的问题，业务一旦接入，理论上说可用性一定会降低，因此安全系统的可用性尤为关键。如果安全系统的可用性只能做到3个9，那整个系统的可用性无论如何也无法做到4个9。这就给安全系统的推广带来了更多的阻力。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;正因为如此，本文所描述的安全问题对于大多数组织和系统来说都是重要而不紧急的问题。由于工作关系，本文介绍的问题和解决方案可能更适合于较大的团队和对安全要求较高的系统。&lt;/p&gt;
